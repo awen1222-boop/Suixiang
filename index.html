@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=0.1, maximum-scale=5.0, user-scalable=yes">
-  <title>穗香民宿預約與財務管理系統 V.S260923.01</title>
+  <title>穗香民宿預約與財務管理系統 V.S260923.02</title>
   
   <!-- 載入 Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-app-compat.js"></script>
@@ -220,19 +220,19 @@
     }
     .btn-close-room:hover { background: #334155; }
 
-    /* 營收表特定樣式 */
+    /* 營收表特定樣式與透明輸入框 */
     .revenue-table th { background-color: #dbeafe !important; white-space: nowrap; }
     .revenue-table .freeze-left { background-color: #f1f5f9; }
     .month-badge { background-color: #22c55e; color: white; font-weight: bold; padding: 3px 6px; border-radius: 3px; display: inline-block; }
-    .table-input { width: 100%; border: 1px solid transparent; padding: 4px; text-align: right; box-sizing: border-box; font-size: 13.5px; background: transparent; }
-    .table-input:hover { border-color: #cbd5e1; background: #fff; }
-    .table-input:focus { border-color: #2563eb; background: #fff; outline: none; }
+    .table-input { width: 100%; border: 1px solid transparent; padding: 4px; text-align: right; box-sizing: border-box; font-size: 13.5px; background: transparent; transition: all 0.2s; border-radius: 3px; }
+    .table-input:hover:not([readonly]) { border-color: #cbd5e1; background: #fff; }
+    .table-input:focus:not([readonly]) { border-color: #2563eb; background: #fff; outline: none; box-shadow: 0 0 0 2px rgba(37,99,235,0.1); }
     .cell-surplus { font-weight: bold; color: #1e3a8a; }
     .cell-surplus.negative { color: #dc2626; }
 
     /* 其他按鈕樣式 */
-    .btn-delete { color: #dc2626; border: 1px solid #fca5a5; background: #fef2f2; padding: 4px 8px; font-size: 12px; border-radius: 3px; }
-    .btn-copy { color: #0284c7; border: 1px solid #bae6fd; background: #f0f9ff; padding: 4px 8px; font-size: 12px; border-radius: 3px; }
+    .btn-delete { color: #dc2626; border: 1px solid #fca5a5; background: #fef2f2; padding: 4px 8px; font-size: 12px; border-radius: 3px; cursor: pointer; }
+    .btn-copy { color: #0284c7; border: 1px solid #bae6fd; background: #f0f9ff; padding: 4px 8px; font-size: 12px; border-radius: 3px; cursor: pointer; }
 
     .common-form { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; background: white; padding: 12px 16px; border-radius: 6px; border: 1px solid var(--border-color); margin-bottom: 15px; }
 
@@ -261,7 +261,7 @@
   <div class="top-bar">
     <div class="title">
       🏡 穗香民宿預約與財務管理系統
-      <span class="version-badge">V.S260923.01</span>
+      <span class="version-badge">V.S260923.02</span>
       <span id="syncStatus" class="status-badge">連線中...</span>
     </div>
   </div>
@@ -358,12 +358,12 @@
     </div>
   </div>
 
-  <!-- 分頁 3: 每月支出明細 -->
+  <!-- 分頁 3: 每月支出明細 (支援直接點擊金額/備註原地修改存檔) -->
   <div id="tab-expenses" class="tab-content">
     <div class="controls">
       <label>檢視月份：<input type="month" id="expenseMonthPicker" onchange="listenToMonthExpenses()"></label>
       <span style="font-size: 12.5px; color: #64748b;">
-        ※ 填寫後金額將自動同步至營收總表，並即時更新下方結算明細。
+        ※ 填寫後金額將自動同步至營收總表。如需修改，可直接點擊下方列表的「金額」或「備註」直接編輯！
       </span>
     </div>
 
@@ -466,19 +466,20 @@
       "2027-05-01": "勞動節", "2027-06-09": "端午節", "2027-09-15": "中秋節", "2027-10-10": "國慶日", "2027-10-11": "國慶補假"
     };
 
-    // Firebase 配置 (原專案配置保持不變)
+    // 穗香專屬 Firebase 配置
     const firebaseConfig = {
-      apiKey: "AIzaSyCbMGoJhwMc38reF2xItPJDEaLFOM2bJDo",
-      authDomain: "rabbit-homestay-127d5.firebaseapp.com",
-      projectId: "rabbit-homestay-127d5",
-      storageBucket: "rabbit-homestay-127d5.firebasestorage.app",
-      messagingSenderId: "342784028721",
-      appId: "1:342784028721:web:7e5b796900d4c0353b6510"
+      apiKey: "AIzaSyDWLSf5MbA1BCW6BlbfVBIYiqsHjVRQsBY",
+      authDomain: "suixiang-1e91f.firebaseapp.com",
+      projectId: "suixiang-1e91f",
+      storageBucket: "suixiang-1e91f.firebasestorage.app",
+      messagingSenderId: "659954298290",
+      appId: "1:659954298290:web:20bbcc9a72dfc0a96308ab"
     };
 
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
+    // 支出與營收總表 100% 嚴格對齊之分類
     const EXP_CATEGORIES = ['booking佣金', '水費', '電費', '房務薪水', '網路費', '其他支出', '房貸'];
     let roomNames = ['二人房01', '二人房02', '四人房01', '四人房02', '四人房03'];
     
@@ -553,6 +554,9 @@
             namesFromCloud.push(roomNames[namesFromCloud.length]);
           }
           roomNames = namesFromCloud;
+        } else {
+          // 若雲端無資料則以穗香預設房名初始化寫入
+          db.collection('settings').doc('rooms').set({ names: roomNames });
         }
         for (let i = 1; i <= 5; i++) {
           const el = document.getElementById(`th-room${i}`);
@@ -954,7 +958,7 @@
     }
 
     // ==========================================
-    // 3. 每月支出明細 & 即時結餘計算
+    // 3. 每月支出明細 & 原地編輯修改
     // ==========================================
     function listenToMonthExpenses() {
       if (unsubscribeExpenses) unsubscribeExpenses();
@@ -968,7 +972,12 @@
         .onSnapshot(snap => {
            expenseTabBookings = {};
            snap.forEach(doc => { expenseTabBookings[doc.id] = doc.data(); });
-           if (currentMonthExpenses.length >= 0) renderExpenseTable();
+           if (currentMonthExpenses.length >= 0) {
+             const active = document.activeElement;
+             const isTyping = active && ['INPUT', 'TEXTAREA'].includes(active.tagName) && document.getElementById('expenseTableBody').contains(active);
+             if (!isTyping) renderExpenseTable();
+             else updateExpenseTotalsOnly();
+           }
         });
 
       unsubscribeExpenses = db.collection('expenses')
@@ -979,7 +988,15 @@
             currentMonthExpenses.push({ id: doc.id, ...doc.data() });
           });
           currentMonthExpenses.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
-          renderExpenseTable();
+          
+          const active = document.activeElement;
+          const isTyping = active && ['INPUT', 'TEXTAREA'].includes(active.tagName) && document.getElementById('expenseTableBody').contains(active);
+          
+          if (!isTyping) {
+            renderExpenseTable();
+          } else {
+            updateExpenseTotalsOnly();
+          }
           setSyncStatus('雲端已同步', 'synced');
         }, err => {
           console.error("載入支出失敗:", err);
@@ -990,27 +1007,68 @@
     function renderExpenseTable() {
       const tbody = document.getElementById('expenseTableBody');
       tbody.innerHTML = '';
-      
-      let monthTotal = 0;
 
       if (currentMonthExpenses.length === 0) {
         tbody.innerHTML = `<tr><td colspan="5" style="color:#94a3b8; padding:18px;">本月份尚無明細紀錄，請於上方填寫新增。</td></tr>`;
       } else {
         currentMonthExpenses.forEach(item => {
           const amt = parseFloat(item.amount) || 0;
-          monthTotal += amt;
 
           const tr = document.createElement('tr');
           tr.innerHTML = `
             <td>${item.date}</td>
             <td><span style="font-weight:600; color:#1e293b;">${item.category}</span></td>
-            <td style="text-align:right; font-weight:600; color:#b91c1c;">${amt.toLocaleString()}</td>
-            <td style="text-align:left; color:#475569;">${item.note || '-'}</td>
+            <td style="text-align:right;">
+              <input type="number" class="table-input" style="font-weight:600; color:#b91c1c; text-align:right;" value="${amt}" onchange="updateExpenseField('${item.id}', 'amount', this.value)">
+            </td>
+            <td style="text-align:left;">
+              <input type="text" class="table-input" style="text-align:left; color:#475569;" value="${item.note || ''}" placeholder="點擊編輯備註..." onchange="updateExpenseField('${item.id}', 'note', this.value)">
+            </td>
             <td><button class="btn-delete" onclick="deleteExpense('${item.id}')">刪除</button></td>
           `;
           tbody.appendChild(tr);
         });
       }
+
+      updateExpenseTotalsOnly();
+    }
+
+    // 支援原地修改金額與備註即時寫入雲端
+    function updateExpenseField(id, field, value) {
+      let updateData = {};
+      if (field === 'amount') {
+        const numVal = parseFloat(value) || 0;
+        updateData[field] = numVal;
+      } else {
+        updateData[field] = value.trim();
+      }
+
+      const expIndex = currentMonthExpenses.findIndex(e => e.id === id);
+      if (expIndex > -1) {
+        currentMonthExpenses[expIndex][field] = updateData[field];
+        updateExpenseTotalsOnly();
+      }
+
+      setSyncStatus('儲存中...', 'syncing');
+      db.collection('expenses').doc(id).update(updateData).then(() => {
+        setSyncStatus('雲端已同步', 'synced');
+        if (field === 'amount') {
+          const year = document.getElementById('expenseMonthPicker').value.slice(0, 4);
+          if (document.getElementById('revenueYearPicker').value === year) {
+            loadRevenueYearData();
+          }
+        }
+      }).catch(err => {
+        alert('更新失敗：' + err.message);
+        setSyncStatus('同步異常', 'syncing');
+      });
+    }
+
+    function updateExpenseTotalsOnly() {
+      let monthTotal = 0;
+      currentMonthExpenses.forEach(item => {
+        monthTotal += (parseFloat(item.amount) || 0);
+      });
 
       let totalCollection = 0;
       for (let date in expenseTabBookings) {
@@ -1193,7 +1251,7 @@
         const wsExpenses = XLSX.utils.aoa_to_sheet(expRows);
         XLSX.utils.book_append_sheet(wb, wsExpenses, "支出明細");
 
-        const fileName = `穗香民宿管理資料_V.S260923.01_${new Date().toISOString().slice(0, 10)}.xlsx`;
+        const fileName = `穗香民宿管理資料_V.S260923.02_${new Date().toISOString().slice(0, 10)}.xlsx`;
         XLSX.writeFile(wb, fileName);
         setSyncStatus('雲端已同步', 'synced');
       } catch (err) {
